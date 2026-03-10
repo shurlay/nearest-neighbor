@@ -35,9 +35,8 @@ def forward_selection(data):
 
         for k in range(len(data_content[0]) - 1):
             if k not in current_set_of_features:
-                print(f"Considering adding the '{k}' feature.")
                 accuracy = leave_one_out_cross_validation(data_content, current_set_of_features, k+1)
-
+                print(f"Considering adding the '{k}' feature with {accuracy * 100}% accuracy.")
                 if accuracy > best_so_far_accuracy:
                     best_so_far_accuracy = accuracy
                     feature_to_add = k
@@ -54,5 +53,5 @@ if __name__ == "__main__":
 
     if algorithm == '1':
         forward_selection(file)
-    else:
-        backward_elimination(file)
+    # else:
+    #     backward_elimination(file)
