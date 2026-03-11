@@ -3,10 +3,8 @@ import time
 
 global_best_accuracy_so_far = 0
 
-def leave_one_out_cross_validation(data, current_set, feature_to_add):
+def leave_one_out_cross_validation(data, current_set, features):
     global global_best_accuracy_so_far
-    features = current_set.copy()
-    features.append(feature_to_add)
     number_correct = 0
     
     min_correct = int(np.ceil(global_best_accuracy_so_far * len(data)))
@@ -24,9 +22,9 @@ def leave_one_out_cross_validation(data, current_set, feature_to_add):
                 if distance < nearest_neighbor_distance:
                     nearest_neighbor_distance = distance
                     nearest_neighbor_location = k
-                    nearest_neighor_label = data[nearest_neighbor_location,0]
+                    nearest_neighbor_label = data[nearest_neighbor_location,0]
         
-        if label_object_to_classify == nearest_neighor_label:
+        if label_object_to_classify == nearest_neighbor_label:
             number_correct += 1
         
         max_possible = number_correct + (len(data) - i - 1)
@@ -50,15 +48,15 @@ def forward_selection(data):
 
         for k in range(1, data_content.shape[1]):
             if k not in current_set_of_features:
-                accuracy = leave_one_out_cross_validation(data_content, current_set_of_features, k)
+                features = current_set_of_features.copy()
+                features.append(k)
+                accuracy = leave_one_out_cross_validation(data_content, current_set_of_features, features)
 
                 if accuracy == -1:
                     print(f"Skipping feature {k}.")
                     continue
 
-                features = current_set_of_features.copy()
-                features.append(k)
-                print(f"Using feature(s) {set(features)} accuracy is {accuracy * 100:.1f}%")
+                print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
 
                 if accuracy > best_so_far_accuracy:
                     best_so_far_accuracy = accuracy
@@ -79,19 +77,59 @@ def forward_selection(data):
             print(f"No feature improved accuracy at this level.\n")
             break
 
-    print(f"Finished search, best feature subset is {set(best_features_overall)}, which has the accuracy of {best_accuracy_overall * 100:.1f}%")
+    print(f"Finished search, best feature subset is {best_features_overall}, which has the accuracy of {best_accuracy_overall * 100:.1f}%")
 
 def backward_elimination(data):
+    global global_best_accuracy_so_far
     data_content = np.loadtxt(data)
-    num_features = data_content.shape[1] - 1
-    current_set_of_features = list(range(1, num_features + 1))
+    current_set_of_features = list(range(1, data_content.shape[1]))
     best_accuracy_overall = 0
     best_features_overall = []
+
+    for i in range(1, data_content.shape[1]):
+        print(f"On the {i}th level of the search tree.")
+        feature_to_remove = None
+        best_so_far_accuracy = 0
+
+        for k in range(1, data_content.shape[1]):
+            if k in current_set_of_features:
+                features = []
+                for j in current_set_of_features:
+                    if j != k:
+                        features.append(j)
+                accuracy = leave_one_out_cross_validation(data_content, current_set_of_features, features)
+
+                if accuracy == -1:
+                    print(f"Skipping feature {k}.")
+                    continue
+
+                print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
+
+                if accuracy > best_so_far_accuracy:
+                    best_so_far_accuracy = accuracy
+                    feature_to_remove = k
+        
+        if feature_to_remove is not None:
+            current_set_of_features.remove(feature_to_remove)
+            print(f"On level {i}, I removed feature '{feature_to_remove}' in current set.")
+
+            if best_so_far_accuracy > global_best_accuracy_so_far:
+                global_best_accuracy_so_far = best_so_far_accuracy
+            if best_so_far_accuracy > best_accuracy_overall:
+                best_accuracy_overall = best_so_far_accuracy
+                best_features_overall = current_set_of_features.copy()
+            else:
+                print("Accuracy has decreased! Continuing search in case of local maxima.")
+        else:
+            print(f"No feature improved accuracy at this level.\n")
+            break
+
+    print(f"Finished search, best feature subset is {best_features_overall}, which has the accuracy of {best_accuracy_overall * 100:.1f}%")
 
 if __name__ == "__main__":
     print("Welcome to Shirley's Feature Selection Algorithm.")
     file = input("Type in the name of the file to test: ")
-    print("\nType the number of the algorithm you want to run.\n")
+    print("\nType the number of the algorithm you want to run.")
     algorithm = input("1. Forward Selection or 2. Backward Elimination\n")
 
     if algorithm == '1':
@@ -100,9 +138,8 @@ if __name__ == "__main__":
         end_time = time.time()
         total_time = end_time - start_time
         print(f"Total Time: {total_time}")
-    # else:
-    #     start_time = time.time()
-    #     backward_elimination(file)
-    #     end_time = time.time()
-    #     total_time = end_time - start_time
-    #     print(f"Total Time: {total_time}")
+    if algorithm == '2':
+        start_time = time.time()
+        backward_elimination(file)
+        end_time = time.time()
+        print(f"Total Time: {end_time - start_time}")
