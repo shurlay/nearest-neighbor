@@ -37,6 +37,7 @@ def leave_one_out_cross_validation(data, current_set, features):
 def forward_selection(data):
     global global_best_accuracy_so_far
     data_content = np.loadtxt(data)
+    output_file = open("forward_results.txt", "w")
     current_set_of_features = []
     best_accuracy_overall = 0
     best_features_overall = []
@@ -57,6 +58,7 @@ def forward_selection(data):
                     continue
 
                 print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
+                output_file.write(f"{features},{accuracy * 100:.1f}\n")
 
                 if accuracy > best_so_far_accuracy:
                     best_so_far_accuracy = accuracy
@@ -68,9 +70,8 @@ def forward_selection(data):
 
             if best_so_far_accuracy > global_best_accuracy_so_far:
                 global_best_accuracy_so_far = best_so_far_accuracy
-            if best_so_far_accuracy > best_accuracy_overall:
-                best_accuracy_overall = best_so_far_accuracy
                 best_features_overall = current_set_of_features.copy()
+                best_accuracy_overall = best_so_far_accuracy
             else:
                 print("Accuracy has decreased! Continuing search in case of local maxima.")
         else:
@@ -78,10 +79,12 @@ def forward_selection(data):
             break
 
     print(f"Finished search, best feature subset is {best_features_overall}, which has the accuracy of {best_accuracy_overall * 100:.1f}%")
+    output_file.close()
 
 def backward_elimination(data):
     global global_best_accuracy_so_far
     data_content = np.loadtxt(data)
+    output_file = open("backward_results.txt", "w")
     current_set_of_features = list(range(1, data_content.shape[1]))
     best_accuracy_overall = 0
     best_features_overall = []
@@ -104,6 +107,7 @@ def backward_elimination(data):
                     continue
 
                 print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
+                output_file.write(f"{features},{accuracy * 100:.1f}\n")
 
                 if accuracy > best_so_far_accuracy:
                     best_so_far_accuracy = accuracy
@@ -115,9 +119,8 @@ def backward_elimination(data):
 
             if best_so_far_accuracy > global_best_accuracy_so_far:
                 global_best_accuracy_so_far = best_so_far_accuracy
-            if best_so_far_accuracy > best_accuracy_overall:
-                best_accuracy_overall = best_so_far_accuracy
                 best_features_overall = current_set_of_features.copy()
+                best_accuracy_overall = best_so_far_accuracy
             else:
                 print("Accuracy has decreased! Continuing search in case of local maxima.")
         else:
@@ -125,6 +128,7 @@ def backward_elimination(data):
             break
 
     print(f"Finished search, best feature subset is {best_features_overall}, which has the accuracy of {best_accuracy_overall * 100:.1f}%")
+    output_file.close()
 
 if __name__ == "__main__":
     print("Welcome to Shirley's Feature Selection Algorithm.")
