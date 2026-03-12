@@ -7,7 +7,7 @@ def leave_one_out_cross_validation(data, current_set, features):
     global global_best_accuracy_so_far
     number_correct = 0
     
-    min_correct = int(np.ceil(global_best_accuracy_so_far * len(data)))
+    # min_correct = int(np.ceil(global_best_accuracy_so_far * len(data)))
 
     for i in range(len(data)):
         object_to_classify = data[i,features]
@@ -27,9 +27,9 @@ def leave_one_out_cross_validation(data, current_set, features):
         if label_object_to_classify == nearest_neighbor_label:
             number_correct += 1
         
-        max_possible = number_correct + (len(data) - i - 1)
-        if max_possible < min_correct:
-            return -1
+        # max_possible = number_correct + (len(data) - i - 1)
+        # if max_possible < min_correct:
+        #     return -1
         
     return number_correct / len(data)
 
@@ -53,9 +53,9 @@ def forward_selection(data):
                 features.append(k)
                 accuracy = leave_one_out_cross_validation(data_content, current_set_of_features, features)
 
-                if accuracy == -1:
-                    print(f"Skipping feature {k}.")
-                    continue
+                # if accuracy == -1:
+                #     print(f"Skipping feature {k}.")
+                #     continue
 
                 print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
                 output_file.write(f"{features},{accuracy * 100:.1f}\n")
@@ -74,9 +74,9 @@ def forward_selection(data):
                 best_accuracy_overall = best_so_far_accuracy
             else:
                 print("Accuracy has decreased! Continuing search in case of local maxima.")
-        else:
-            print(f"No feature improved accuracy at this level.\n")
-            break
+        # else:
+        #     print(f"No feature improved accuracy at this level.\n")
+        #     break
 
     print(f"Finished search, best feature subset is {best_features_overall}, which has the accuracy of {best_accuracy_overall * 100:.1f}%")
     output_file.close()
@@ -96,15 +96,17 @@ def backward_elimination(data):
 
         for k in range(1, data_content.shape[1]):
             if k in current_set_of_features:
-                features = []
-                for j in current_set_of_features:
-                    if j != k:
-                        features.append(j)
+                features = current_set_of_features.copy()
+                features.remove(k)
+
+                if not features:
+                    continue
+                
                 accuracy = leave_one_out_cross_validation(data_content, current_set_of_features, features)
 
-                if accuracy == -1:
-                    print(f"Skipping feature {k}.")
-                    continue
+                # if accuracy == -1:
+                #     print(f"Skipping feature {k}.")
+                #     continue
 
                 print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
                 output_file.write(f"{features},{accuracy * 100:.1f}\n")
@@ -123,9 +125,9 @@ def backward_elimination(data):
                 best_accuracy_overall = best_so_far_accuracy
             else:
                 print("Accuracy has decreased! Continuing search in case of local maxima.")
-        else:
-            print(f"No feature improved accuracy at this level.\n")
-            break
+        # else:
+        #     print(f"No feature improved accuracy at this level.\n")
+        #     break
 
     print(f"Finished search, best feature subset is {best_features_overall}, which has the accuracy of {best_accuracy_overall * 100:.1f}%")
     output_file.close()
