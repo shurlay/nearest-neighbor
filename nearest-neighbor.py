@@ -1,8 +1,10 @@
 import numpy as np
 import time
 
+# all commented code is for early abandonment
 global_best_accuracy_so_far = 0
 
+# referenced Dr. Eamonn Keogh's pseudocode
 def leave_one_out_cross_validation(data, current_set, features):
     global global_best_accuracy_so_far
     number_correct = 0
@@ -17,8 +19,10 @@ def leave_one_out_cross_validation(data, current_set, features):
         nearest_neighbor_location = np.inf
 
         for k in range(len(data)):
+            # ensure we are not comparing distance to yourself
             if k != i:
                 distance = np.sqrt(np.sum((object_to_classify - data[k,features]) ** 2))
+                # update nearest_neighbor distance
                 if distance < nearest_neighbor_distance:
                     nearest_neighbor_distance = distance
                     nearest_neighbor_location = k
@@ -30,14 +34,15 @@ def leave_one_out_cross_validation(data, current_set, features):
         # max_possible = number_correct + (len(data) - i - 1)
         # if max_possible < min_correct:
         #     return -1
-        
+    
+    #calculate accuracy
     return number_correct / len(data)
 
 
 def forward_selection(data):
     global global_best_accuracy_so_far
     data_content = np.loadtxt(data)
-    output_file = open("forward_results.txt", "w")
+    output_file = open("forward_results.txt", "w") # output file to organize data to plot graph
     current_set_of_features = []
     best_accuracy_overall = 0
     best_features_overall = []
@@ -48,6 +53,7 @@ def forward_selection(data):
         best_so_far_accuracy = 0
 
         for k in range(1, data_content.shape[1]):
+            # ensure the feature is not in the current set of features, so it can be appended
             if k not in current_set_of_features:
                 features = current_set_of_features.copy()
                 features.append(k)
@@ -58,16 +64,19 @@ def forward_selection(data):
                 #     continue
 
                 print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
-                output_file.write(f"{features},{accuracy * 100:.1f}\n")
+                output_file.write(f"{features},{accuracy * 100:.1f}\n") # write subsets and accuracies to file
 
+                # update best so far accuracy
                 if accuracy > best_so_far_accuracy:
                     best_so_far_accuracy = accuracy
                     feature_to_add = k
         
+        # append feature if it isn't None
         if feature_to_add is not None:
             current_set_of_features.append(feature_to_add)
             print(f"On level {i}, I added feature '{feature_to_add}' to current set.")
 
+            # update best overall features and accuracy
             if best_so_far_accuracy > global_best_accuracy_so_far:
                 global_best_accuracy_so_far = best_so_far_accuracy
                 best_features_overall = current_set_of_features.copy()
@@ -82,9 +91,9 @@ def forward_selection(data):
     output_file.close()
 
 def backward_elimination(data):
-    global global_best_accuracy_so_far
+    # global global_best_accuracy_so_far
     data_content = np.loadtxt(data)
-    output_file = open("backward_results.txt", "w")
+    output_file = open("backward_results.txt", "w") #output file to organize data to plot graph
     current_set_of_features = list(range(1, data_content.shape[1]))
     best_accuracy_overall = 0
     best_features_overall = []
@@ -95,13 +104,14 @@ def backward_elimination(data):
         best_so_far_accuracy = 0
 
         for k in range(1, data_content.shape[1]):
+            # ensure the feature is in the current set of features, so it can be removed
             if k in current_set_of_features:
                 features = current_set_of_features.copy()
                 features.remove(k)
 
                 if not features:
                     continue
-                
+
                 accuracy = leave_one_out_cross_validation(data_content, current_set_of_features, features)
 
                 # if accuracy == -1:
@@ -109,16 +119,19 @@ def backward_elimination(data):
                 #     continue
 
                 print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
-                output_file.write(f"{features},{accuracy * 100:.1f}\n")
+                output_file.write(f"{features},{accuracy * 100:.1f}\n")  # write subsets and accuracies to file
 
+                # update best so far accuracy
                 if accuracy > best_so_far_accuracy:
                     best_so_far_accuracy = accuracy
                     feature_to_remove = k
         
+        # remove feature if it isn't None
         if feature_to_remove is not None:
             current_set_of_features.remove(feature_to_remove)
             print(f"On level {i}, I removed feature '{feature_to_remove}' in current set.")
 
+            # update best overall features and accuracy
             if best_so_far_accuracy > global_best_accuracy_so_far:
                 global_best_accuracy_so_far = best_so_far_accuracy
                 best_features_overall = current_set_of_features.copy()
@@ -142,10 +155,11 @@ if __name__ == "__main__":
         start_time = time.time()
         forward_selection(file)
         end_time = time.time()
-        total_time = end_time - start_time
+        total_time = end_time - start_time # calculate total time
         print(f"Total Time: {total_time}")
     if algorithm == '2':
         start_time = time.time()
         backward_elimination(file)
         end_time = time.time()
-        print(f"Total Time: {end_time - start_time}")
+        total_time = end_time - start_time # calculate total time
+        print(f"Total Time: {total_time}")
