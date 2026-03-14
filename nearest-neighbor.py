@@ -1,15 +1,14 @@
 import numpy as np
 import time
 
-# all commented code is for early abandonment
-global_best_accuracy_so_far = 0
-
 # referenced Dr. Eamonn Keogh's pseudocode
 def leave_one_out_cross_validation(data, current_set, features):
-    global global_best_accuracy_so_far
     number_correct = 0
-    
-    # min_correct = int(np.ceil(global_best_accuracy_so_far * len(data)))
+
+    # to calculate the default rate
+    if len(features) == 0:
+        classes = data[:, 0]
+        return max(np.sum(classes == 1), np.sum(classes == 2)) / len(classes)
 
     for i in range(len(data)):
         object_to_classify = data[i,features]
@@ -30,22 +29,24 @@ def leave_one_out_cross_validation(data, current_set, features):
         
         if label_object_to_classify == nearest_neighbor_label:
             number_correct += 1
-        
-        # max_possible = number_correct + (len(data) - i - 1)
-        # if max_possible < min_correct:
-        #     return -1
     
     #calculate accuracy
     return number_correct / len(data)
 
 
 def forward_selection(data):
-    global global_best_accuracy_so_far
     data_content = np.loadtxt(data)
     output_file = open("forward_results.txt", "w") # output file to organize data to plot graph
     current_set_of_features = []
     best_accuracy_overall = 0
     best_features_overall = []
+
+    # get the default rate
+    default_rate = leave_one_out_cross_validation(data_content, current_set_of_features, current_set_of_features)
+    print(f"Running nearest neighbor with no features (default rate), accuracy = {default_rate * 100:.1f}%\n")
+    output_file.write(f"[],{default_rate * 100:.1f}\n")
+
+    best_accuracy_overall = default_rate
 
     for i in range(1, data_content.shape[1]):
         print(f"On the {i}th level of the search tree.")
@@ -59,10 +60,6 @@ def forward_selection(data):
                 features.append(k)
                 accuracy = leave_one_out_cross_validation(data_content, current_set_of_features, features)
 
-                # if accuracy == -1:
-                #     print(f"Skipping feature {k}.")
-                #     continue
-
                 print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
                 output_file.write(f"{features},{accuracy * 100:.1f}\n") # write subsets and accuracies to file
 
@@ -75,72 +72,64 @@ def forward_selection(data):
         if feature_to_add is not None:
             current_set_of_features.append(feature_to_add)
             print(f"On level {i}, I added feature '{feature_to_add}' to current set.")
+            print(f"Feature set {current_set_of_features} was best, accuracy = {best_so_far_accuracy * 100:.1f}%\n")
 
             # update best overall features and accuracy
-            if best_so_far_accuracy > global_best_accuracy_so_far:
-                global_best_accuracy_so_far = best_so_far_accuracy
+            if best_so_far_accuracy > best_accuracy_overall:
                 best_features_overall = current_set_of_features.copy()
                 best_accuracy_overall = best_so_far_accuracy
             else:
                 print("Accuracy has decreased! Continuing search in case of local maxima.")
-        # else:
-        #     print(f"No feature improved accuracy at this level.\n")
-        #     break
 
     print(f"Finished search, best feature subset is {best_features_overall}, which has the accuracy of {best_accuracy_overall * 100:.1f}%")
     output_file.close()
 
 def backward_elimination(data):
-    # global global_best_accuracy_so_far
     data_content = np.loadtxt(data)
     output_file = open("backward_results.txt", "w") #output file to organize data to plot graph
     current_set_of_features = list(range(1, data_content.shape[1]))
     best_accuracy_overall = 0
     best_features_overall = []
 
-    for i in range(1, data_content.shape[1]):
+    # get accuracy of all features included
+    accuracy_all_features = leave_one_out_cross_validation(data_content, current_set_of_features, current_set_of_features)
+    print(f"Running nearest neighbor with all features, I get an accuracy of {accuracy_all_features * 100:.1f}%\n")
+    output_file.write(f"{current_set_of_features},{accuracy_all_features * 100:.1f}\n")
+
+    best_accuracy_overall = accuracy_all_features
+    best_features_overall = current_set_of_features.copy()
+
+    for i in range(1, data_content.shape[1] - 1):
         print(f"On the {i}th level of the search tree.")
         feature_to_remove = None
         best_so_far_accuracy = 0
 
-        for k in range(1, data_content.shape[1]):
-            # ensure the feature is in the current set of features, so it can be removed
-            if k in current_set_of_features:
-                features = current_set_of_features.copy()
-                features.remove(k)
+        # ensure the feature is in the current set of features, so it can be removed
+        for k in current_set_of_features:
+            features = current_set_of_features.copy()
+            features.remove(k)
+            accuracy = leave_one_out_cross_validation(data_content, current_set_of_features, features)
 
-                if not features:
-                    continue
+            print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
+            output_file.write(f"{features},{accuracy * 100:.1f}\n")  # write subsets and accuracies to file
 
-                accuracy = leave_one_out_cross_validation(data_content, current_set_of_features, features)
-
-                # if accuracy == -1:
-                #     print(f"Skipping feature {k}.")
-                #     continue
-
-                print(f"Using feature(s) {features} accuracy is {accuracy * 100:.1f}%")
-                output_file.write(f"{features},{accuracy * 100:.1f}\n")  # write subsets and accuracies to file
-
-                # update best so far accuracy
-                if accuracy > best_so_far_accuracy:
-                    best_so_far_accuracy = accuracy
-                    feature_to_remove = k
+            # update best so far accuracy
+            if accuracy > best_so_far_accuracy:
+                best_so_far_accuracy = accuracy
+                feature_to_remove = k
         
         # remove feature if it isn't None
         if feature_to_remove is not None:
             current_set_of_features.remove(feature_to_remove)
             print(f"On level {i}, I removed feature '{feature_to_remove}' in current set.")
+            print(f"Feature set {current_set_of_features} was best, accuracy = {best_so_far_accuracy * 100:.1f}%\n")
 
             # update best overall features and accuracy
-            if best_so_far_accuracy > global_best_accuracy_so_far:
-                global_best_accuracy_so_far = best_so_far_accuracy
+            if best_so_far_accuracy > best_accuracy_overall:
                 best_features_overall = current_set_of_features.copy()
                 best_accuracy_overall = best_so_far_accuracy
             else:
                 print("Accuracy has decreased! Continuing search in case of local maxima.")
-        # else:
-        #     print(f"No feature improved accuracy at this level.\n")
-        #     break
 
     print(f"Finished search, best feature subset is {best_features_overall}, which has the accuracy of {best_accuracy_overall * 100:.1f}%")
     output_file.close()
